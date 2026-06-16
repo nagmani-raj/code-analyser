@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚡ DSA Code Analyzer — Live Web Demo</title>
+  <meta name="description" content="Analyze DSA code in real-time. Detects language, approach, time & space complexity." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── CSS Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #111827;
+      --bg-card: #1a1f35;
+      --bg-card-hover: #222845;
+      --bg-input: #0d1220;
+      --border-color: #1e293b;
+      --border-hover: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --brand-400: #818cf8;
+      --brand-500: #6366f1;
+      --brand-600: #4f46e5;
+      --brand-700: #4338ca;
+      --green-400: #4ade80;
+      --green-500: #22c55e;
+      --green-bg: rgba(34, 197, 94, 0.1);
+      --yellow-400: #facc15;
+      --yellow-bg: rgba(250, 204, 21, 0.1);
+      --red-400: #f87171;
+      --red-bg: rgba(248, 113, 113, 0.1);
+      --blue-400: #60a5fa;
+      --blue-bg: rgba(96, 165, 250, 0.1);
+      --cyan-400: #22d3ee;
+      --purple-400: #c084fc;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Animated BG ─── */
+    .bg-grid {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: 
+        radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.04) 0%, transparent 50%);
+      z-index: 0;
+      animation: bgPulse 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes bgPulse {
+      0% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    /* ─── Layout ─── */
+    .app-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* ─── Header ─── */
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 1rem;
+      border-radius: 99px;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: var(--brand-400);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #f1f5f9, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.15;
+      margin-bottom: 0.75rem;
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ─── Main Grid ─── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Cards ─── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+
+    .card:hover { border-color: var(--border-hover); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-header h2 {
+      font-size: 0.875rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-body { padding: 1.25rem; }
+
+    /* ─── Code Editor ─── */
+    .code-area {
+      width: 100%;
+      min-height: 380px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      color: var(--text-primary);
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      tab-size: 4;
+    }
+
+    .code-area:focus {
+      border-color: var(--brand-500);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .code-area::placeholder { color: var(--text-muted); }
+
+    /* ─── Controls ─── */
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .lang-select {
+      padding: 0.5rem 0.75rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      color: var(--text-primary);
+      font-size: 0.8rem;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .lang-select:focus { border-color: var(--brand-500); }
+
+    .analyze-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.5rem;
+      background: linear-gradient(135deg, var(--brand-600), var(--brand-500));
+      color: white;
+      font-size: 0.825rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 0.6rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .analyze-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .analyze-btn:active { transform: translateY(0) scale(0.98); }
+
+    .analyze-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ─── Example Buttons ─── */
+    .examples-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .example-btn {
+      padding: 0.35rem 0.75rem;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 0.5rem;
+      color: var(--brand-400);
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .example-btn:hover {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* ─── Results Panel ─── */
+    .results-placeholder {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+
+    .results-placeholder .icon-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 1rem;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+      font-size: 1.75rem;
+    }
+
+    .results-placeholder h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .results-placeholder p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ─── Result Metrics ─── */
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .metric-card {
+      padding: 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      transition: all 0.3s;
+      animation: metricIn 0.4s ease-out forwards;
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .metric-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    @keyframes metricIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .metric-card:nth-child(1) { animation-delay: 0.05s; }
+    .metric-card:nth-child(2) { animation-delay: 0.1s; }
+    .metric-card:nth-child(3) { animation-delay: 0.15s; }
+    .metric-card:nth-child(4) { animation-delay: 0.2s; }
+    .metric-card:nth-child(5) { animation-delay: 0.25s; }
+    .metric-card:nth-child(6) { animation-delay: 0.3s; }
+
+    .metric-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .metric-value {
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    .metric-value.mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+    }
+
+    /* ─── Optimization Badge ─── */
+    .opt-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .opt-optimized { background: var(--green-bg); color: var(--green-400); }
+    .opt-can { background: var(--yellow-bg); color: var(--yellow-400); }
+    .opt-not { background: var(--red-bg); color: var(--red-400); }
+    .opt-unknown { background: rgba(100,116,139,0.1); color: var(--text-muted); }
+
+    /* ─── Confidence Bar ─── */
+    .confidence-section {
+      grid-column: 1 / -1;
+    }
+
+    .confidence-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: var(--bg-input);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .confidence-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+      background: linear-gradient(90deg, var(--brand-600), var(--brand-400), var(--cyan-400));
+    }
+
+    /* ─── Details Section ─── */
+    .details-section {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      animation: metricIn 0.4s 0.35s ease-out forwards;
+      opacity: 0;
+    }
+
+    .details-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .detail-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+    }
+
+    .detail-row:last-child { border-bottom: none; }
+
+    .detail-key {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .detail-val {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .pattern-list {
+      list-style: none;
+      margin-top: 0.5rem;
+    }
+
+    .pattern-list li {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      padding: 0.3rem 0 0.3rem 1rem;
+      position: relative;
+    }
+
+    .pattern-list li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--brand-400);
+    }
+
+    /* ─── DS Tags ─── */
+    .ds-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.25rem;
+    }
+
+    .ds-tag {
+      padding: 0.2rem 0.5rem;
+      background: var(--blue-bg);
+      color: var(--blue-400);
+      border-radius: 0.35rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ─── Analyzing Animation ─── */
+    .analyzing-state {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--brand-500);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1.25rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Footer ─── */
+    .footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding: 1.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .footer a {
+      color: var(--brand-400);
+      text-decoration: none;
+    }
+
+    /* ─── Pulse dot ─── */
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green-500);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-badge">
+        <span class="pulse-dot"></span>
+        Live Demo — Works in Browser
+      </div>
+      <h1>⚡ DSA Code Analyzer</h1>
+      <p>Paste any DSA code below — the analyzer will detect language, algorithmic approach, time &amp; space complexity, and optimization status in real time.</p>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-grid">
+      <!-- Left: Editor -->
+      <div class="card">
+        <div class="card-header">
+          <h2>📝 Code Editor</h2>
+          <select id="langSelect" class="lang-select">
+            <option value="auto">🔍 Auto-detect</option>
+            <option value="cpp">C++</option>
+            <option value="java">Java</option>
+            <option value="python">Python</option>
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="go">Go</option>
+          </select>
+        </div>
+        <div class="card-body">
+          <textarea id="codeInput" class="code-area" placeholder="// Paste your DSA code here...&#10;// Example: Two Sum, Binary Search, BFS, DP, etc.&#10;&#10;vector<int> twoSum(vector<int>& nums, int target) {&#10;    unordered_map<int, int> mp;&#10;    for (int i = 0; i < nums.size(); i++) {&#10;        int comp = target - nums[i];&#10;        if (mp.count(comp)) return {mp[comp], i};&#10;        mp[nums[i]] = i;&#10;    }&#10;    return {};&#10;}"></textarea>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; gap:1rem; flex-wrap:wrap;">
+            <div class="examples-row">
+              <button class="example-btn" onclick="loadExample('twosum')">Two Sum</button>
+              <button class="example-btn" onclick="loadExample('bsearch')">Binary Search</button>
+              <button class="example-btn" onclick="loadExample('bfs')">BFS</button>
+              <button class="example-btn" onclick="loadExample('dp')">DP Knapsack</button>
+              <button class="example-btn" onclick="loadExample('backtrack')">N-Queens</button>
+              <button class="example-btn" onclick="loadExample('twoptr')">Two Pointer</button>
+              <button class="example-btn" onclick="loadExample('dfs')">DFS</button>
+            </div>
+            <button id="analyzeBtn" class="analyze-btn" onclick="runAnalysis()">
+              ⚡ Analyze
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Results -->
+      <div class="card">
+        <div class="card-header">
+          <h2>📊 Analysis Report</h2>
+          <span id="statusDot" style="display:none" class="pulse-dot"></span>
+        </div>
+        <div class="card-body" id="resultsContainer">
+          <div class="results-placeholder">
+            <div class="icon-circle">⚡</div>
+            <h3>Ready to Analyze</h3>
+            <p>Paste your code on the left and click "Analyze" — or try one of the example buttons!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>⚡ <strong>DSA Code Analyzer</strong> — Core engine powered by <code>@dsa-analyzer/analyzer</code></p>
+      <p style="margin-top:0.35rem">Supports C++, Java, Python, JavaScript, TypeScript, Go · 21 algorithmic approaches · Real-time analysis</p>
+    </footer>
+  </div>
+
+  <!-- Load bundled analyzer -->
+  <script type="module">
+    import { analyzeCode } from './analyzer-bundle.mjs';
+
+    // Make it globally available
+    window.analyzeCode = analyzeCode;
+
+    // Auto-analyze on load if there's placeholder content
+    // (don't analyze placeholder text)
+  </script>
+
+  <script>
+    // ─── Example Code Snippets ───
+    const examples = {
+      twosum: {
+        code: `vector<int> twoSum(vector<int>& nums, int target) {
+    unordered_map<int, int> mp;
+    for (int i = 0; i < nums.size(); i++) {
+        int comp = target - nums[i];
+        if (mp.count(comp)) return {mp[comp], i};
+        mp[nums[i]] = i;
+    }
+    return {};
+}`,
+        lang: 'cpp'
+      },
+      bsearch: {
+        code: `def binary_search(arr, target):
+    left, right = 0, len(arr) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1`,
+        lang: 'python'
+      },
+      bfs: {
+        code: `public List<List<Integer>> levelOrder(TreeNode root) {
+    List<List<Integer>> result = new ArrayList<>();
+    if (root == null) return result;
+    Queue<TreeNode> queue = new LinkedList<>();
+    queue.add(root);
+    while (!queue.isEmpty()) {
+        int size = queue.size();
+        List<Integer> level = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            TreeNode node = queue.poll();
+            level.add(node.val);
+            if (node.left != null) queue.add(node.left);
+            if (node.right != null) queue.add(node.right);
+        }
+        result.add(level);
+    }
+    return result;
+}`,
+        lang: 'java'
+      },
+      dp: {
+        code: `int knapsack(int W, vector<int>& wt, vector<int>& val, int n) {
+    vector<vector<int>> dp(n + 1, vector<int>(W + 1, 0));
+    for (int i = 1; i <= n; i++) {
+        for (int w = 1; w <= W; w++) {
+            if (wt[i-1] <= w)
+                dp[i][w] = max(dp[i-1][w], val[i-1] + dp[i-1][w - wt[i-1]]);
+            else
+                dp[i][w] = dp[i-1][w];
+        }
+    }
+    return dp[n][W];
+}`,
+        lang: 'cpp'
+      },
+      backtrack: {
+        code: `def solveNQueens(n):
+    result = []
+    board = [['.' for _ in range(n)] for _ in range(n)]
+    
+    def is_safe(row, col):
+        for i in range(row):
+            if board[i][col] == 'Q':
+                return False
+        i, j = row - 1, col - 1
+        while i >= 0 and j >= 0:
+            if board[i][j] == 'Q':
+                return False
+            i -= 1
+            j -= 1
+        i, j = row - 1, col + 1
+        while i >= 0 and j < n:
+            if board[i][j] == 'Q':
+                return False
+            i -= 1
+            j += 1
+        return True
+    
+    def backtrack(row):
+        if row == n:
+            result.append([''.join(r) for r in board])
+            return
+        for col in range(n):
+            if is_safe(row, col):
+                board[row][col] = 'Q'
+                backtrack(row + 1)
+                board[row][col] = '.'
+    
+    backtrack(0)
+    return result`,
+        lang: 'python'
+      },
+      twoptr: {
+        code: `function maxArea(height) {
+    let left = 0, right = height.length - 1;
+    let maxWater = 0;
+    while (left < right) {
+        const width = right - left;
+        const h = Math.min(height[left], height[right]);
+        maxWater = Math.max(maxWater, width * h);
+        if (height[left] < height[right]) {
+            left++;
+        } else {
+            right--;
+        }
+    }
+    return maxWater;
+}`,
+        lang: 'javascript'
+      },
+      dfs: {
+        code: `class Solution:
+    def maxDepth(self, root):
+        if not root:
+            return 0
+        left_depth = self.maxDepth(root.left)
+        right_depth = self.maxDepth(root.right)
+        return max(left_depth, right_depth) + 1`,
+        lang: 'python'
+      }
+    };
+
+    function loadExample(name) {
+      const ex = examples[name];
+      if (!ex) return;
+      document.getElementById('codeInput').value = ex.code;
+      document.getElementById('langSelect').value = ex.lang;
+      runAnalysis();
+    }
+
+    function runAnalysis() {
+      const code = document.getElementById('codeInput').value.trim();
+      if (!code) return;
+
+      const container = document.getElementById('resultsContainer');
+      const statusDot = document.getElementById('statusDot');
+
+      // Show loading
+      container.innerHTML = `
+        <div class="analyzing-state">
+          <div class="spinner"></div>
+          <h3 style="font-size:0.95rem; font-weight:700; margin-bottom:0.35rem">Analyzing...</h3>
+          <p style="font-size:0.75rem; color:var(--text-muted)">Detecting patterns, complexity, and approach</p>
+        </div>
+      `;
+
+      // Small delay for visual effect
+      setTimeout(() => {
+        const langSelect = document.getElementById('langSelect').value;
+        const options = langSelect === 'auto' ? {} : { language: langSelect };
+
+        try {
+          const result = window.analyzeCode(code, options);
+          statusDot.style.display = 'block';
+          renderResults(result);
+        } catch (err) {
+          container.innerHTML = `
+            <div class="results-placeholder">
+              <div class="icon-circle" style="background:var(--red-bg); border-color:rgba(248,113,113,0.2)">❌</div>
+              <h3>Analysis Failed</h3>
+              <p>${err.message}</p>
+            </div>
+          `;
+        }
+      }, 400);
+    }
+
+    function renderResults(r) {
+      const container = document.getElementById('resultsContainer');
+
+      const optClass = r.optimization === 'Optimized' ? 'opt-optimized'
+        : r.optimization === 'Can Be Optimized' ? 'opt-can'
+        : r.optimization === 'Not Optimized' ? 'opt-not'
+        : 'opt-unknown';
+
+      const optIcon = r.optimization === 'Optimized' ? '✅'
+        : r.optimization === 'Can Be Optimized' ? '⚠️'
+        : r.optimization === 'Not Optimized' ? '❌'
+        : '❓';
+
+      const confidencePct = Math.round(r.confidence * 100);
+      const barColor = confidencePct >= 80 ? 'var(--green-400)' :
+                       confidencePct >= 50 ? 'var(--yellow-400)' : 'var(--red-400)';
+
+      let detailsHtml = '';
+      if (r.details) {
+        let rows = '';
+        if (r.details.loopDepth !== undefined) {
+          rows += `<div class="detail-row"><span class="detail-key">🔄 Loop Depth</span><span class="detail-val">${r.details.loopDepth}</span></div>`;
+        }
+        if (r.details.hasRecursion !== undefined) {
+          rows += `<div class="detail-row"><span class="detail-key">🔁 Recursion</span><span class="detail-val">${r.details.hasRecursion ? 'Yes' : 'No'}</span></div>`;
+        }
+        if (r.details.dataStructures?.length) {
+          rows += `<div class="detail-row"><span class="detail-key">🗂️ Data Structures</span><div class="ds-tags">${r.details.dataStructures.map(d => `<span class="ds-tag">${d}</span>`).join('')}</div></div>`;
+        }
+
+        let patternHtml = '';
+        if (r.details.patterns?.length) {
+          patternHtml = `
+            <div style="margin-top:0.75rem">
+              <div class="details-title">Reasoning</div>
+              <ul class="pattern-list">
+                ${r.details.patterns.map(p => `<li>${p}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }
+
+        detailsHtml = `
+          <div class="details-section">
+            <div class="details-title">Analysis Details</div>
+            ${rows}
+            ${patternHtml}
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="result-grid">
+          <div class="metric-card">
+            <div class="metric-label">Language</div>
+            <div class="metric-value" style="color:var(--cyan-400)">${r.language}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Approach</div>
+            <div class="metric-value" style="color:var(--purple-400)">${r.approach}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Time Complexity</div>
+            <div class="metric-value mono" style="color:var(--brand-400)">${r.timeComplexity}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Space Complexity</div>
+            <div class="metric-value mono" style="color:var(--blue-400)">${r.spaceComplexity}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Optimization</div>
+            <div><span class="opt-badge ${optClass}">${optIcon} ${r.optimization}</span></div>
+          </div>
+          <div class="metric-card confidence-section" style="grid-column: 1 / -1;">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+              <div class="metric-label" style="margin:0">Confidence</div>
+              <div class="metric-value mono" style="font-size:0.85rem; color:${barColor}">${confidencePct}%</div>
+            </div>
+            <div class="confidence-bar-bg">
+              <div class="confidence-bar-fill" style="width:${confidencePct}%"></div>
+            </div>
+          </div>
+        </div>
+        ${detailsHtml}
+      `;
+    }
+  </script>
+</body>
+</html>
